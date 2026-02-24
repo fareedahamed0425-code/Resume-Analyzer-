@@ -1,6 +1,6 @@
 
 async function testAI() {
-    const apiKey = "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";
+    const apiKey = "your_openrouter_api_key_here";
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {

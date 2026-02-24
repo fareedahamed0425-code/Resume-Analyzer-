@@ -52,7 +52,7 @@ export interface AnalysisResult {
 }
 
 export async function analyzeResume(content: string, targetRole?: string, linkedinUrl?: string): Promise<AnalysisResult> {
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || "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";
+  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
 
   let finalContent = content;
 
