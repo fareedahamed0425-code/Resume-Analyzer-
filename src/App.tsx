@@ -68,7 +68,12 @@ export default function App() {
     multiple: false
   });
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (roleOverride?: string) => {
+    if (isAnalyzing) return;
+
+    // Use override if provided, otherwise fall back to state
+    const currentRole = roleOverride || targetRole;
+
     setIsAnalyzing(true);
     setError(null);
     try {
@@ -79,11 +84,17 @@ export default function App() {
         contentToAnalyze = fileText + "\n" + contentToAnalyze;
       }
 
-      if (!contentToAnalyze.trim() && !linkedinUrl.trim()) {
-        throw new Error('Please provide a resume file, LinkedIn URL, or paste your profile content.');
+      const hasContent = contentToAnalyze.trim().length > 0 || linkedinUrl.trim().length > 0;
+
+      if (!hasContent) {
+        // If triggered by role selection, we might not want to show an error yet if they haven't uploaded anything
+        if (!roleOverride) {
+          throw new Error('Please provide a resume file, LinkedIn URL, or paste your profile content.');
+        }
+        return;
       }
 
-      const data = await analyzeResume(contentToAnalyze, targetRole, linkedinUrl);
+      const data = await analyzeResume(contentToAnalyze, currentRole, linkedinUrl);
       setResult(data);
     } catch (err: any) {
       console.error(err);
@@ -226,8 +237,15 @@ export default function App() {
                       <div className="relative">
                         <select
                           value={targetRole}
-                          onChange={(e) => setTargetRole(e.target.value)}
-                          className="glass-input w-full rounded-lg h-12 px-4 appearance-none text-slate-100 focus:ring-0"
+                          disabled={isAnalyzing}
+                          onChange={(e) => {
+                            const newRole = e.target.value;
+                            setTargetRole(newRole);
+                            if (newRole) {
+                              handleAnalyze(newRole);
+                            }
+                          }}
+                          className="glass-input w-full rounded-lg h-12 px-4 appearance-none text-slate-100 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <option value="">Select Role</option>
                           {ROLES.map(role => (
@@ -238,11 +256,11 @@ export default function App() {
                       </div>
                     </div>
                     <button
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing || (!file && !linkedinUrl && !pastedText)}
+                      onClick={() => handleAnalyze()}
+                      disabled={isAnalyzing || (!file && !linkedinUrl && !pastedText.trim())}
                       className={cn(
                         "glow-button bg-primary hover:bg-primary/90 text-white font-semibold h-12 rounded-lg flex items-center justify-center gap-2 group transition-all",
-                        (isAnalyzing || (!file && !linkedinUrl && !pastedText)) && "opacity-50 cursor-not-allowed"
+                        (isAnalyzing || (!file && !linkedinUrl && !pastedText.trim())) && "opacity-50 cursor-not-allowed"
                       )}
                     >
                       {isAnalyzing ? (

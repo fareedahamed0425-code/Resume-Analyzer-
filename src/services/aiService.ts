@@ -100,7 +100,7 @@ export async function analyzeResume(content: string, targetRole?: string, linked
   const fullPrompt = `${SYSTEM_PROMPT}
 
 Analyze the following professional profile content. 
-${targetRole ? `TARGET ROLE: ${targetRole}` : ''}
+${targetRole ? `CRITICAL: The candidate is targeting the role of "${targetRole}". All analysis, keywords, and the professional summary MUST be tailored specifically to this role's requirements and best practices.` : ''}
 ${linkedinUrl ? `LINKEDIN PROFILE URL: ${linkedinUrl}` : ''}
 
 CONTEXT: If only a URL is provided, try to reason based on any available text or the URL path if it contains a name. If you have any internal knowledge of this public figure/profile, use it. Otherwise, provide a general professional analysis based on best practices for the target role.
