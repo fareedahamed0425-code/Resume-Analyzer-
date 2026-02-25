@@ -29,15 +29,55 @@ import { analyzeResume, type AnalysisResult } from './services/aiService';
 import { cn } from './lib/utils';
 import { extractTextFromFile } from './lib/fileParser';
 
-const ROLES = [
-  "Senior Software Engineer",
-  "Product Design Lead",
-  "Cybersecurity Analyst",
-  "Data Scientist",
-  "Cloud Architect",
-  "Product Manager",
-  "Marketing Director",
-  "Financial Analyst"
+const ROLE_SECTIONS = [
+  {
+    title: "Software / Development Roles",
+    roles: [
+      "Software Engineer", "Frontend Developer", "Backend Developer", "Full Stack Developer",
+      "Web Developer", "Mobile App Developer", "Application Developer", "Systems Engineer", "API Developer"
+    ]
+  },
+  {
+    title: "Cybersecurity / Security Roles",
+    roles: [
+      "Cybersecurity Analyst", "Security Analyst", "SOC Analyst", "Information Security Analyst",
+      "Ethical Hacker", "Penetration Tester", "Vulnerability Analyst", "Security Engineer",
+      "Network Security Engineer", "Digital Forensics Analyst"
+    ]
+  },
+  {
+    title: "AI / Data / ML Roles",
+    roles: [
+      "Data Scientist", "Machine Learning Engineer", "AI Engineer", "AI/ML Developer",
+      "Data Analyst", "Business Intelligence Analyst", "NLP Engineer", "Computer Vision Engineer",
+      "Data Engineer", "Research Engineer (AI)"
+    ]
+  },
+  {
+    title: "Cloud / Infrastructure Roles",
+    roles: [
+      "Cloud Architect", "Cloud Engineer", "DevOps Engineer", "Site Reliability Engineer (SRE)",
+      "Infrastructure Engineer", "Platform Engineer", "Cloud Security Engineer"
+    ]
+  },
+  {
+    title: "Design / UI / UX Roles",
+    roles: [
+      "UI Designer", "UX Designer", "UI/UX Designer", "Product Designer", "Interaction Designer"
+    ]
+  },
+  {
+    title: "Management / Product Roles",
+    roles: [
+      "Product Manager", "Technical Product Manager", "Project Manager", "Program Manager", "Engineering Manager"
+    ]
+  },
+  {
+    title: "Business / Other Common Roles",
+    roles: [
+      "Marketing Manager / Director", "Financial Analyst", "Operations Manager", "Business Analyst"
+    ]
+  }
 ];
 
 export default function App() {
@@ -45,6 +85,7 @@ export default function App() {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [pastedText, setPastedText] = useState('');
   const [targetRole, setTargetRole] = useState('');
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -235,24 +276,73 @@ export default function App() {
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2 px-1">Target Professional Role</label>
                       <div className="relative">
-                        <select
-                          value={targetRole}
+                        <button
+                          type="button"
+                          onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
                           disabled={isAnalyzing}
-                          onChange={(e) => {
-                            const newRole = e.target.value;
-                            setTargetRole(newRole);
-                            if (newRole) {
-                              handleAnalyze(newRole);
-                            }
-                          }}
-                          className="glass-input w-full rounded-lg h-12 px-4 appearance-none text-slate-100 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="glass-input w-full rounded-lg h-12 px-4 text-left text-slate-100 flex items-center justify-between focus:ring-1 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed group transition-all"
                         >
-                          <option value="">Select Role</option>
-                          {ROLES.map(role => (
-                            <option key={role} value={role}>{role}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={18} />
+                          <span className={targetRole ? "text-slate-100" : "text-slate-500"}>
+                            {targetRole || "Select Role"}
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              "text-slate-500 transition-transform duration-300",
+                              isRoleDropdownOpen && "rotate-180 text-primary"
+                            )}
+                            size={18}
+                          />
+                        </button>
+
+                        <AnimatePresence>
+                          {isRoleDropdownOpen && (
+                            <>
+                              {/* Backdrop to close dropdown */}
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setIsRoleDropdownOpen(false)}
+                              />
+                              <motion.div
+                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                className="absolute top-full mt-2 left-0 w-full max-h-80 overflow-y-auto z-50 glass-card rounded-xl border border-white/10 shadow-2xl custom-scrollbar"
+                              >
+                                {ROLE_SECTIONS.map((section, idx) => (
+                                  <div key={idx} className="p-2">
+                                    <h4 className="px-3 py-2 text-[10px] font-black text-primary uppercase tracking-widest border-b border-white/5 mb-1 bg-white/5 rounded-t-lg">
+                                      {section.title}
+                                    </h4>
+                                    <div className="space-y-1">
+                                      {section.roles.map(role => (
+                                        <button
+                                          key={role}
+                                          onClick={() => {
+                                            setTargetRole(role);
+                                            setIsRoleDropdownOpen(false);
+                                            handleAnalyze(role);
+                                          }}
+                                          className={cn(
+                                            "w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-between group",
+                                            targetRole === role
+                                              ? "bg-primary/20 text-white font-bold"
+                                              : "text-slate-300 hover:bg-white/10 hover:text-white"
+                                          )}
+                                        >
+                                          {role}
+                                          {targetRole === role && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(43,108,238,0.8)]" />
+                                          )}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                     <button
