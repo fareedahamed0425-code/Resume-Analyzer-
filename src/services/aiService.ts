@@ -94,12 +94,10 @@ export async function analyzeResume(content: string, targetRole?: string, linked
     }
   }
 
-  // Truncate content to 30k chars to be safer with free tier providers
-  const truncatedContent = finalContent.length > 30000 ? finalContent.substring(0, 30000) + "..." : finalContent;
+  // Truncate content for better provider compatibility
+  const truncatedContent = finalContent.length > 15000 ? finalContent.substring(0, 15000) + "..." : finalContent;
 
-  const fullPrompt = `${SYSTEM_PROMPT}
-
-Analyze the following professional profile content. 
+  const userContent = `Analyze the following professional profile content. 
 ${targetRole ? `CRITICAL: The candidate is targeting the role of "${targetRole}". All analysis, keywords, and the professional summary MUST be tailored specifically to this role's requirements and best practices.` : ''}
 ${linkedinUrl ? `LINKEDIN PROFILE URL: ${linkedinUrl}` : ''}
 
@@ -127,25 +125,29 @@ JSON STRUCTURE:
 }`;
 
   let lastError = "";
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
-          "HTTP-Referer": "https://careeredge.ai",
-          "X-Title": "CareerEdge Analyzer",
+          "HTTP-Referer": import.meta.env.VITE_APP_URL || "http://localhost:3000",
+          "X-Title": "Resume Analyser",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
           "model": "meta-llama/llama-3.3-70b-instruct:free",
           "messages": [
             {
+              "role": "system",
+              "content": SYSTEM_PROMPT
+            },
+            {
               "role": "user",
-              "content": fullPrompt
+              "content": userContent
             }
-          ],
-          "response_format": { "type": "json_object" }
+          ]
         })
       });
 
@@ -161,14 +163,20 @@ JSON STRUCTURE:
         }
         lastError = errorMessage;
         // Wait 1s before retry if it's a provider error
-        if (attempt < 1) await new Promise(r => setTimeout(r, 1000));
+        if (attempt < MAX_ATTEMPTS - 1) {
+          const delay = Math.pow(2, attempt) * 1000;
+          await new Promise(r => setTimeout(r, delay));
+        }
         continue;
       }
 
       const data = await response.json();
-      let text = data.choices[0].message.content;
+      let text = data.choices?.[0]?.message?.content;
 
-      if (!text) throw new Error("No response from AI");
+      if (!text) {
+        console.error("No content in response:", data);
+        throw new Error("No response from AI");
+      }
 
       // Clean the response
       text = text.replace(/```json/g, "").replace(/```/g, "").trim();
@@ -177,7 +185,10 @@ JSON STRUCTURE:
     } catch (e: any) {
       console.error(`Attempt ${attempt + 1} failed:`, e);
       lastError = e.message;
-      if (attempt < 1) await new Promise(r => setTimeout(r, 1000));
+      if (attempt < MAX_ATTEMPTS - 1) {
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise(r => setTimeout(r, delay));
+      }
     }
   }
 
