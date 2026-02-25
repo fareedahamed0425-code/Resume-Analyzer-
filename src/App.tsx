@@ -483,25 +483,78 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Weak Phrases & Improvements */}
+                {/* Dynamic Section Review & Improvements */}
                 <div className="md:col-span-6 glass-card rounded-xl p-8">
                   <h3 className="text-slate-400 text-xs font-bold mb-8 uppercase tracking-widest flex items-center gap-2">
                     <AlertCircle className="text-amber-500" size={16} />
-                    Weak Phrases & Improvements
+                    Resume Analysis
                   </h3>
-                  <ul className="space-y-6">
-                    {result.weakPhrases.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-                        <div className="mt-1.5 w-2 h-2 rounded-full bg-amber-500 shrink-0 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-100 italic">"{item.phrase}"</p>
-                          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                            {item.reason} Replace with <span className="text-primary font-bold">"{item.rewrite}"</span>
-                          </p>
-                        </div>
-                      </li>
+
+                  <div className="space-y-8">
+                    {/* Section Feedback */}
+                    {Object.entries(result.section_feedback).map(([section, items], idx) => (
+                      <div key={idx} className="space-y-4">
+                        <h4 className="text-[10px] font-black text-primary uppercase tracking-widest px-2 py-1 bg-primary/5 rounded border border-primary/10 inline-block">
+                          {section}
+                        </h4>
+                        <ul className="space-y-3">
+                          {items.map((item, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                              <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0 opacity-60"></div>
+                              <p className="text-sm text-slate-300 leading-relaxed">{item}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     ))}
-                  </ul>
+
+                    {/* Phrase Improvements */}
+                    {result.phrase_improvements.length > 0 && (
+                      <div className="pt-6 border-t border-white/5 space-y-4">
+                        <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest px-2 py-1 bg-amber-500/5 rounded border border-amber-500/10 inline-block">
+                          Phrase Improvements
+                        </h4>
+                        <ul className="space-y-6">
+                          {result.phrase_improvements.map((item, idx) => (
+                            <li key={idx} className="p-4 rounded-xl bg-white/5 border border-white/5">
+                              <div className="flex flex-col gap-2">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+                                  {item.section}
+                                </span>
+                                <p className="text-sm font-medium text-slate-400 italic flex items-center gap-2">
+                                  "{item.original}"
+                                  <span className="text-primary">→</span>
+                                  <span className="text-white font-bold">"{item.improved}"</span>
+                                </p>
+                                <p className="text-xs text-slate-500 leading-relaxed">
+                                  {item.reason}
+                                </p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Missing Sections */}
+                    {result.missing_recommended_sections.length > 0 && (
+                      <div className="pt-6 border-t border-white/5 space-y-4">
+                        <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest px-2 py-1 bg-emerald-500/5 rounded border border-emerald-500/10 inline-block">
+                          Recommendations
+                        </h4>
+                        <div className="space-y-2">
+                          <p className="text-xs text-slate-400">Consider adding these high-impact sections:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {result.missing_recommended_sections.map((section, idx) => (
+                              <span key={idx} className="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-slate-300 font-medium">
+                                + {section}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Generated Professional Summary */}
@@ -521,12 +574,16 @@ export default function App() {
                       {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
                     </button>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-6 border border-white/5 relative flex-grow">
+                  <div className="bg-white/5 rounded-xl p-6 border border-white/5 relative flex-grow mb-4">
+                    <p className="text-[10px] text-primary font-black uppercase tracking-widest mb-2 opacity-60">Overall Assessment</p>
+                    <p className="text-slate-300 text-sm italic mb-4 border-b border-white/5 pb-4">
+                      {result.overall_summary}
+                    </p>
                     <p className="text-slate-200 leading-relaxed text-sm font-medium">
                       {result.professionalSummary}
                     </p>
                   </div>
-                  <div className="mt-6 flex flex-wrap gap-2">
+                  <div className="mt-auto flex flex-wrap gap-2">
                     {result.hashtags.map((tag, idx) => (
                       <span key={idx} className="px-2.5 py-1 bg-white/5 rounded text-[10px] text-slate-400 font-black uppercase tracking-wider border border-white/5">
                         #{tag.replace(/^#/, '')}

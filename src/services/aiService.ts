@@ -4,37 +4,44 @@ const SYSTEM_PROMPT = `You are an advanced AI Resume and LinkedIn Profile Analyz
 
 Your role is to critically evaluate resumes and LinkedIn profile content with the accuracy of a senior recruiter, ATS system, and hiring manager combined.
 
-Follow these rules strictly:
-• Be direct, specific, and constructive — avoid generic advice
-• Focus on impact, clarity, and professional strength
-• Prefer measurable achievements and strong action verbs
-• Never provide vague suggestions
-• Maintain a confident, expert tone
+CORE BEHAVIOR REQUIREMENTS:
+• The system MUST NOT assume fixed resume sections.
+• Dynamic Section Detection: Identify section headings from the content (e.g., Education, Experience, Projects, Skills, Summary, Certifications, Achievements, Internships, Publications, or custom headings).
+• Do NOT rely on a predefined section list; allow unknown or unconventional sections.
+• Generate feedback ONLY for sections present in the resume.
+• Recommendations: If a major expected section is missing for the target role, suggest it.
+• Feedback must be context-aware, section-specific, and avoid generic advice.
 
-TASKS TO PERFORM:
-1. Detect weak, generic, or ineffective phrases
-2. Explain why each phrase is weak
-3. Provide significantly stronger rewritten versions
-4. Evaluate ATS optimization and keyword strength
-5. Identify missing or underused high-value keywords
-6. Generate a powerful professional summary
-7. Provide an overall quality assessment (score 0-100)
+PHRASE IMPROVEMENT RULES:
+• Extract weak or low-impact phrases from ANY section.
+• Provide improvements in a clear comparison format.
+• Provide a short justification for each suggestion.
+
+FOLLOW THESE RULES STRICTLY:
+• Be direct, specific, and constructive — avoid generic advice.
+• Focus on impact, clarity, and professional strength.
+• Prefer measurable achievements and strong action verbs.
+• Maintain a confident, expert tone.
 
 ANALYSIS CRITERIA:
-• Strength of action verbs
-• Specificity and measurable impact
-• Professional tone and clarity
-• Keyword richness and ATS compatibility
-• Relevance to modern hiring expectations
-• Avoidance of clichés and filler language`;
+• Strength of action verbs and measurable impact.
+• Professional tone and clarity.
+• Keyword richness and ATS compatibility.
+• Relevance to modern hiring expectations.`;
 
 export interface AnalysisResult {
   overallScore: number;
-  overallAssessment: string;
-  weakPhrases: Array<{
-    phrase: string;
+  overall_summary: string;
+  detected_sections: string[];
+  missing_recommended_sections: string[];
+  section_feedback: {
+    [key: string]: string[];
+  };
+  phrase_improvements: Array<{
+    section: string;
+    original: string;
+    improved: string;
     reason: string;
-    rewrite: string;
   }>;
   atsOptimization: {
     keywordStrength: number;
@@ -101,17 +108,24 @@ export async function analyzeResume(content: string, targetRole?: string, linked
 ${targetRole ? `CRITICAL: The candidate is targeting the role of "${targetRole}". All analysis, keywords, and the professional summary MUST be tailored specifically to this role's requirements and best practices.` : ''}
 ${linkedinUrl ? `LINKEDIN PROFILE URL: ${linkedinUrl}` : ''}
 
-CONTEXT: If only a URL is provided, try to reason based on any available text or the URL path if it contains a name. If you have any internal knowledge of this public figure/profile, use it. Otherwise, provide a general professional analysis based on best practices for the target role.
+CONTEXT: If only a URL is provided, try to reason based on any available text or the URL path if it contains a name. Otherwise, provide a general professional analysis based on best practices for the target role.
 
 CONTENT TO ANALYZE:
 ${truncatedContent || "No detailed content provided. Please perform a high-level analysis based on the LinkedIn URL and Target Role (if provided)."}
 
 CRITICAL: Return ONLY a valid JSON object. No explanation.
-JSON STRUCTURE:
+REQUIRED JSON STRUCTURE:
 {
-  "overallScore": number,
-  "overallAssessment": "string",
-  "weakPhrases": [{ "phrase": "string", "reason": "string", "rewrite": "string" }],
+  "overallScore": number (0-100),
+  "overall_summary": "detailed assessment",
+  "detected_sections": ["list of headings found in resume"],
+  "missing_recommended_sections": ["sections that SHOULD be there but aren't"],
+  "section_feedback": {
+    "section_name": ["feedback item 1", "feedback item 2"]
+  },
+  "phrase_improvements": [
+    { "section": "Experience", "original": "weak phrase", "improved": "strong phrase", "reason": "why" }
+  ],
   "atsOptimization": {
     "keywordStrength": number,
     "formatParsing": number,
@@ -119,10 +133,11 @@ JSON STRUCTURE:
     "keywordStrengthText": "string",
     "missingKeywords": ["string"]
   },
-  "professionalSummary": "string",
-  "hashtags": ["string"],
-  "verdict": { "status": "string", "label": "string" }
+  "professionalSummary": "highly optimized summary",
+  "hashtags": ["relevant", "skills"],
+  "verdict": { "status": "Ready/Needs Work", "label": "Expert Verdict Label" }
 }`;
+
 
   let lastError = "";
   const MAX_ATTEMPTS = 5;
