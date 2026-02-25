@@ -125,7 +125,7 @@ JSON STRUCTURE:
 }`;
 
   let lastError = "";
-  const MAX_ATTEMPTS = 3;
+  const MAX_ATTEMPTS = 5;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -133,7 +133,7 @@ JSON STRUCTURE:
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "HTTP-Referer": import.meta.env.VITE_APP_URL || "http://localhost:3000",
-          "X-Title": "Resume Analyser",
+          "X-OpenRouter-Title": "Resume Analyser",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
