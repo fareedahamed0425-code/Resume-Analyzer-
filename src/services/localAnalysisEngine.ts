@@ -363,15 +363,25 @@ class ResumeAnalyzer {
         const defects: string[] = [];
         const findings: string[] = [];
 
+        // Dynamic Role-Specific Review Generation
         if (missingMandatory.length > 0) {
             const signalDeficit = (missingMandatory.length / criteria.mandatorySignals.length) * 35;
             penalty += signalDeficit;
-            defects.push(`Critical Domain Gap: Missing standard ${this.roleCategory} signals like ${missingMandatory.slice(0, 3).join(", ")}.`);
-            findings.push(`[ISSUE] Missing mandatory domain signals (${missingMandatory.slice(0, 2).join(", ")}). [ACTION] Integrate these terms into your professional summary or experience bullets.`);
+
+            // Contextual Explanation for the role
+            findings.push(`[ROLE REQUIREMENT] For a ${this.roleCategory} specialist, demonstrating proficiency in ${missingMandatory.slice(0, 3).join(", ")} is non-negotiable for high-tier ATS clearance.`);
+            findings.push(`[MODIFICATION] Your resume currently lacks explicit signal markers for ${missingMandatory[0]}. You should re-write your experience bullets to specifically mention how you used ${missingMandatory[0]} to solve problems.`);
         }
 
-        if (matchedMandatory.length === 0) {
-            penalty += 10;
+        const missingMetrics = criteria.impactMetrics.filter(m => !contentLower.includes(m.toLowerCase()));
+        if (missingMetrics.length > 0) {
+            findings.push(`[IMPACT GAP] ${this.roleCategory} roles are evaluated on ${criteria.impactMetrics.slice(0, 2).join(" and ")}. Your profile lacks these specific quantitative markers.`);
+            findings.push(`[MODIFICATION] Inject measurable results into your project descriptions. Instead of "Improved performance", use "${missingMetrics[0]} improved by X% via [Method]".`);
+        }
+
+        if (matchedMandatory.length < 2) {
+            penalty += 15; // Heavy penalty for lack of core domain authority
+            defects.push(`Critical Domain Deficit: Profile does not project the expected ${this.roleCategory} authority.`);
         }
 
         const score = Math.max(0, 100 - (penalty * 1.2));
@@ -525,18 +535,18 @@ class ResumeAnalyzer {
         // Detail Feedback Generation (Detailed Review)
         const combinedFindings = [...roleResult.findings, ...socialResult.findings, ...bulletFindings];
         if (combinedFindings.length > 0) {
-            sectionFeedback["Detailed Professional Review"] = combinedFindings.slice(0, 5);
+            sectionFeedback[`Strategic Review: ${this.targetRole || this.roleCategory} Domain`] = combinedFindings.slice(0, 6);
         }
 
         if (roleResult.defects.length > 0) {
-            sectionFeedback["Domain Intelligence Gaps"] = roleResult.defects;
+            sectionFeedback["Technical Signal Deficits"] = roleResult.defects;
         }
 
         if (this.isLinkedInProfile) {
-            sectionFeedback["LinkedIn Presence Analysis"] = socialResult.feedback.map(f => `NOTICE: ${f}`);
+            sectionFeedback["LinkedIn Presence Logic"] = socialResult.feedback.map(f => `NOTICE: ${f}`);
         }
 
-        sectionFeedback["Internal Thinking Path (CoT)"] = this.reasoningTrace;
+        sectionFeedback["Neural Reasoning Trace (CoT)"] = this.reasoningTrace;
 
         const result: AnalysisResult = {
             overallScore: finalScore,

@@ -87,9 +87,17 @@ export default function App() {
   const [targetRole, setTargetRole] = useState('');
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const loadingMessages = [
+    "Getting information from resume",
+    "Comparing with server",
+    "LinkedIn fields monitoring",
+    "Finalizing neural assessment"
+  ];
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -117,6 +125,12 @@ export default function App() {
 
     setIsAnalyzing(true);
     setError(null);
+    setLoadingStep(0);
+
+    const stepInterval = setInterval(() => {
+      setLoadingStep(prev => (prev + 1) % loadingMessages.length);
+    }, 1500);
+
     try {
       let contentToAnalyze = pastedText;
 
@@ -128,19 +142,25 @@ export default function App() {
       const hasContent = contentToAnalyze.trim().length > 0 || linkedinUrl.trim().length > 0;
 
       if (!hasContent) {
-        // If triggered by role selection, we might not want to show an error yet if they haven't uploaded anything
         if (!roleOverride) {
           throw new Error('Please provide a resume file, LinkedIn URL, or paste your profile content.');
         }
+        clearInterval(stepInterval);
+        setIsAnalyzing(false);
         return;
       }
 
       const data = await analyzeResume(contentToAnalyze, currentRole, linkedinUrl);
+
+      // Ensure we stay in loading at least a bit to show messages
+      await new Promise(r => setTimeout(r, 1000));
+
       setResult(data);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to analyze profile. Please try again.');
     } finally {
+      clearInterval(stepInterval);
       setIsAnalyzing(false);
     }
   };
@@ -185,7 +205,49 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-6 py-12">
         <AnimatePresence mode="wait">
-          {!result ? (
+          {isAnalyzing ? (
+            <motion.div
+              key="loading-view"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-8"
+            >
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full border-t-2 border-b-2 border-primary animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <BrainCircuit className="text-primary animate-pulse" size={32} />
+                </div>
+                <div className="absolute -inset-4 bg-primary/20 blur-3xl -z-10 rounded-full animate-pulse" />
+              </div>
+
+              <div className="space-y-3">
+                <motion.h3
+                  key={loadingStep}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="text-2xl font-bold text-white tracking-tight"
+                >
+                  {loadingMessages[loadingStep]}
+                </motion.h3>
+                <div className="flex gap-1 justify-center">
+                  {[0, 1, 2, 3].map((step) => (
+                    <div
+                      key={step}
+                      className={cn(
+                        "h-1 w-8 rounded-full transition-all duration-500",
+                        step <= loadingStep ? "bg-primary shadow-[0_0_8px_rgba(43,108,238,0.8)]" : "bg-white/10"
+                      )}
+                    />
+                  ))}
+                </div>
+                <p className="text-slate-500 text-xs uppercase tracking-widest font-black pt-4">
+                  Neural Analysis in Progress
+                </p>
+              </div>
+            </motion.div>
+          ) : !result ? (
             <motion.div
               key="input-view"
               initial={{ opacity: 0, y: 20 }}
