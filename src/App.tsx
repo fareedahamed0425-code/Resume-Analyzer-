@@ -429,55 +429,112 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* ATS Optimization Score */}
+                {/* Advanced Multi-Dimensional Scoring */}
                 <div className="md:col-span-8 glass-card rounded-xl p-8">
                   <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">ATS Optimization Score</h3>
-                    <span className="bg-primary/20 text-primary text-[10px] font-black px-2 py-1 rounded tracking-widest">
-                      {result.overallScore >= 80 ? 'HIGH COMPATIBILITY' : 'MODERATE COMPATIBILITY'}
+                    <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Advanced Analysis Metrics</h3>
+                    <span className="bg-primary/20 text-primary text-[10px] font-black px-2 py-1 rounded tracking-widest uppercase">
+                      Deterministic Local Analysis
                     </span>
                   </div>
-                  <div className="space-y-8">
-                    <div>
-                      <div className="flex justify-between text-sm mb-3">
-                        <span className="text-slate-300 font-medium">Keywords Matching</span>
-                        <span className="text-slate-400 font-bold">{result.atsOptimization.keywordStrength}%</span>
+                  <div className="grid md:grid-cols-3 gap-8">
+                    {/* Impact Score */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Impact Score</p>
+                          <p className="text-2xl font-black text-white">{result.impact_score}%</p>
+                        </div>
+                        <div className="bg-primary/10 p-2 rounded-lg">
+                          <Zap size={16} className="text-primary" />
+                        </div>
                       </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                         <motion.div
-                          className="h-full bg-primary rounded-full"
+                          className="h-full bg-gradient-to-r from-primary/50 to-primary"
                           initial={{ width: 0 }}
-                          animate={{ width: `${result.atsOptimization.keywordStrength}%` }}
+                          animate={{ width: `${result.impact_score}%` }}
+                          transition={{ duration: 1 }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                        {result.explanation.impact}
+                      </p>
+                    </div>
+
+                    {/* Specificity Score */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Specificity Score</p>
+                          <p className="text-2xl font-black text-white">{result.specificity_score}%</p>
+                        </div>
+                        <div className="bg-blue-500/10 p-2 rounded-lg">
+                          <BrainCircuit size={16} className="text-blue-500" />
+                        </div>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-blue-500/50 to-blue-500"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${result.specificity_score}%` }}
                           transition={{ duration: 1, delay: 0.2 }}
                         />
                       </div>
+                      <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                        {result.explanation.specificity}
+                      </p>
                     </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-3">
-                        <span className="text-slate-300 font-medium">Format Parsing</span>
-                        <span className="text-slate-400 font-bold">{result.atsOptimization.formatParsing}%</span>
+
+                    {/* ATS Score */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">ATS Alignment</p>
+                          <p className="text-2xl font-black text-white">{result.ats_score}%</p>
+                        </div>
+                        <div className="bg-emerald-500/10 p-2 rounded-lg">
+                          <CheckCircle2 size={16} className="text-emerald-500" />
+                        </div>
                       </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                         <motion.div
-                          className="h-full bg-primary/60 rounded-full"
+                          className="h-full bg-gradient-to-r from-emerald-500/50 to-emerald-500"
                           initial={{ width: 0 }}
-                          animate={{ width: `${result.atsOptimization.formatParsing}%` }}
+                          animate={{ width: `${result.ats_score}%` }}
                           transition={{ duration: 1, delay: 0.4 }}
                         />
                       </div>
+                      <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                        {result.explanation.ats}
+                      </p>
                     </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-3">
-                        <span className="text-slate-300 font-medium">Skills Validation</span>
-                        <span className="text-slate-400 font-bold">{result.atsOptimization.skillsValidation}%</span>
+                  </div>
+
+                  {/* Keyword signals */}
+                  <div className="mt-8 pt-8 border-t border-white/5">
+                    <div className="flex justify-between text-sm mb-4">
+                      <span className="text-slate-400 font-medium">ATS Optimization Progress</span>
+                      <span className="text-primary font-black uppercase text-[10px]">{result.atsOptimization.keywordStrengthText}</span>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                        <p className="text-[9px] font-black text-slate-500 uppercase mb-2">Parsing Reliability</p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-grow h-1 bg-white/10 rounded-full">
+                            <div className="h-full bg-primary" style={{ width: `${result.atsOptimization.formatParsing}%` }}></div>
+                          </div>
+                          <span className="text-[10px] font-bold text-white">{result.atsOptimization.formatParsing}%</span>
+                        </div>
                       </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-primary/80 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${result.atsOptimization.skillsValidation}%` }}
-                          transition={{ duration: 1, delay: 0.6 }}
-                        />
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                        <p className="text-[9px] font-black text-slate-500 uppercase mb-2">Skills Validation</p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-grow h-1 bg-white/10 rounded-full">
+                            <div className="h-full bg-primary" style={{ width: `${result.atsOptimization.skillsValidation}%` }}></div>
+                          </div>
+                          <span className="text-[10px] font-bold text-white">{result.atsOptimization.skillsValidation}%</span>
+                        </div>
                       </div>
                     </div>
                   </div>
