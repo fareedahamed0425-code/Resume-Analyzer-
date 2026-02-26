@@ -91,6 +91,20 @@ export default function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const slides = [
+    "/previews/1.png",
+    "/previews/2.png",
+    "/previews/3.png"
+  ];
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % slides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
   const loadingMessages = [
     "Getting information from resume",
@@ -335,9 +349,9 @@ export default function App() {
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6 items-end pt-6 border-t border-white/5">
-                    <div>
+                    <div className={cn("transition-all duration-300", isRoleDropdownOpen ? "mb-[45vh] md:mb-84" : "mb-0")}>
                       <label className="block text-sm font-medium text-slate-300 mb-2 px-1">Target Professional Role</label>
-                      <div className="relative">
+                      <div className={cn("relative", isRoleDropdownOpen && "z-10")}>
                         <button
                           type="button"
                           onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
@@ -369,7 +383,7 @@ export default function App() {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                 transition={{ duration: 0.2, ease: "easeOut" }}
-                                className="absolute top-full mt-2 left-0 w-full max-h-80 overflow-y-auto z-50 glass-card rounded-xl border border-white/10 shadow-2xl custom-scrollbar"
+                                className="absolute top-full mt-2 left-0 w-full max-h-[40vh] md:max-h-80 overflow-y-auto z-50 glass-card rounded-xl border border-white/10 shadow-2xl custom-scrollbar overscroll-contain"
                               >
                                 {ROLE_SECTIONS.map((section, idx) => (
                                   <div key={idx} className="p-2">
@@ -436,6 +450,99 @@ export default function App() {
                   )}
                 </div>
               </section>
+
+              {/* Project Explanation Section */}
+              <motion.section
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="max-w-5xl mx-auto space-y-16 pt-12 pb-8"
+              >
+                <div className="text-center space-y-4">
+                  <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white">
+                    Power Up Your Career Search
+                  </h2>
+                  <p className="text-slate-400 max-w-3xl mx-auto text-lg leading-relaxed">
+                    Resume Analyzer leverages advanced neural evaluation to bridge the gap between your professional experience and modern industry benchmarks.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                  <div className="space-y-6">
+                    {[
+                      {
+                        icon: <Zap className="text-primary" size={24} />,
+                        title: "ATS-Oriented Insights",
+                        desc: "Identify and bridge keyword gaps to ensure your profile ranks at the top of automated Applicant Tracking Systems."
+                      },
+                      {
+                        icon: <BrainCircuit className="text-blue-500" size={24} />,
+                        title: "Semantic Role Evaluation",
+                        desc: "Go beyond text matching. Our engine analyzes the semantic weight of your achievements against 50+ professional roles."
+                      },
+                      {
+                        icon: <Star className="text-amber-500" size={24} />,
+                        title: "Impact-Driven Feedback",
+                        desc: "Get actionable suggestions to transform passive descriptions into high-impact, quantifiable professional wins."
+                      }
+                    ].map((feature, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: i * 0.15 }}
+                        className="flex gap-4 p-6 glass-card rounded-2xl border border-white/5 hover:border-primary/20 transition-all group"
+                      >
+                        <div className="bg-white/5 p-3 rounded-xl h-fit group-hover:bg-primary/10 transition-colors">
+                          {feature.icon}
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-lg font-bold text-white group-hover:text-primary transition-colors">{feature.title}</h3>
+                          <p className="text-sm text-slate-400 leading-relaxed">{feature.desc}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="relative group">
+                    <div className="absolute -inset-4 bg-primary/20 blur-3xl opacity-30 group-hover:opacity-60 transition-opacity rounded-full" />
+                    <div className="relative glass-card rounded-3xl border border-white/10 aspect-[16/10] flex flex-col overflow-hidden">
+                      <div className="relative flex-grow overflow-hidden">
+                        <AnimatePresence mode="wait">
+                          <motion.img
+                            key={currentSlide}
+                            src={slides[currentSlide]}
+                            initial={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+                            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                            className="absolute inset-0 w-full h-full object-cover object-top"
+                          />
+                        </AnimatePresence>
+                      </div>
+
+                      {/* Subtile Overlay Gradient */}
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-background-dark/40 to-transparent" />
+
+                      {/* Navigation Dots */}
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+                        {slides.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentSlide(i)}
+                            className={cn(
+                              "h-1 rounded-full transition-all duration-500",
+                              currentSlide === i ? "w-8 bg-primary shadow-[0_0_8px_rgba(43,108,238,0.8)]" : "w-2 bg-white/20 hover:bg-white/40"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.section>
             </motion.div>
           ) : (
             <motion.div

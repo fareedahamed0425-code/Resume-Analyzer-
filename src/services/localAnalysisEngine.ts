@@ -159,6 +159,13 @@ export interface PhraseImprovement {
     reason: string;
 }
 
+export interface ImprovementInsight {
+    detected: string;
+    why: string;
+    recommendation: string;
+    improvement: string;
+}
+
 export interface BulletScore {
     text: string;
     verbStrength: number;
@@ -169,6 +176,7 @@ export interface BulletScore {
     isPassive: boolean;
     isAchievement: boolean;
     issues: string[];
+    insight?: ImprovementInsight;
 }
 
 export interface AnalysisResult {
@@ -207,8 +215,11 @@ export interface AnalysisResult {
     languageScore: number;
     roleAlignmentScore: number;
     criticalGaps: string[];
-    bullet_level_issues: string[];
+    bullet_level_issues: ImprovementInsight[];
     improvementPriorities: string[];
+    critical_improvement_areas: ImprovementInsight[];
+    missing_signals: ImprovementInsight[];
+    recommendations: ImprovementInsight[];
 }
 
 // --- Intelligence Engine ---
@@ -311,12 +322,15 @@ class ResumeAnalyzer {
         if (words.length === 0) return score;
 
         const firstWord = words[0];
+        let verbCategory = "LOW";
         if (ACTION_VERBS.HIGH.has(firstWord)) {
             score.verbStrength = 100;
             score.ownership = 100;
+            verbCategory = "HIGH";
         } else if (ACTION_VERBS.MEDIUM.has(firstWord)) {
             score.verbStrength = 70;
             score.ownership = 60;
+            verbCategory = "MEDIUM";
         } else {
             score.verbStrength = 30;
             score.ownership = 20;
@@ -339,6 +353,42 @@ class ResumeAnalyzer {
             if (PASSIVE_VOICE_AUXILIARY.includes(words[i]) && (words[i + 1].endsWith('ed') || words[i + 1].endsWith('en'))) {
                 score.isPassive = true;
                 break;
+            }
+        }
+
+        // Generate Structured Insight for weak bullets
+        if (score.verbStrength < 70 || score.measurability < 40 || score.isPassive) {
+            const insight: ImprovementInsight = {
+                detected: "",
+                why: "",
+                recommendation: "",
+                improvement: ""
+            };
+
+            if (score.isPassive) {
+                insight.detected = `Passive voice detected: "${text.substring(0, 40)}..."`;
+                insight.why = "Passive language obscures your direct contribution and reduces the perceived impact of your work.";
+                insight.recommendation = "Rephrase to use an active verb at the start of the bullet point.";
+                insight.improvement = "Strengthens your profile by clearly claiming ownership of tasks and results.";
+            } else if (score.verbStrength < 70) {
+                insight.detected = `Weak or task-focused initiation in: "${text.substring(0, 40)}..."`;
+                insight.why = "Beginning bullets with weak verbs like 'assisted' or 'handled' makes you sound like a passenger rather than a driver.";
+                insight.recommendation = `Replace "${firstWord}" with a high-impact verb like "Spearheaded", "Architected", or "Orchestrated".`;
+                insight.improvement = "Positions you as a leader and high-value contributor to the project.";
+            } else if (score.specificity < 60) {
+                insight.detected = `Vague or low-information statement: "${text.substring(0, 40)}..."`;
+                insight.why = "Using filler words or generic descriptions makes your experience feel less substantive.";
+                insight.recommendation = "Remove filler words and replace generic descriptions with specific technical details or outcomes.";
+                insight.improvement = "Increases the professional weight of your resume and clearly demonstrates your expertise.";
+            } else if (score.measurability < 40) {
+                insight.detected = `Missing measurable outcome in: "${text.substring(0, 40)}..."`;
+                insight.why = "Hiring managers cannot evaluate the scale or success of your work without quantitative metrics.";
+                insight.recommendation = "Add a specific metric (%, $, time saved, or scale) to quantify the result of this action.";
+                insight.improvement = "Provides concrete evidence of your ability to deliver high-value business results.";
+            }
+
+            if (insight.detected) {
+                score.insight = insight;
             }
         }
 
@@ -462,6 +512,10 @@ class ResumeAnalyzer {
     public analyze(): AnalysisResult {
         const sectionFeedback: Record<string, string[]> = {};
         const improvementPriorities: string[] = [];
+        const critical_improvement_areas: ImprovementInsight[] = [];
+        const missing_signals: ImprovementInsight[] = [];
+        const recommendations: ImprovementInsight[] = [];
+        const bullet_level_issues: ImprovementInsight[] = [];
 
         let overallDeficit = 0;
         const baseline = 100;
@@ -486,6 +540,13 @@ class ResumeAnalyzer {
                 structuralScore -= missingSections.length * 20;
                 overallDeficit += missingSections.length * 8;
                 this.reasoningTrace.push(`[STRUCTURE] Missing sections: ${missingSections.join(", ")}.`);
+
+                critical_improvement_areas.push({
+                    detected: `Missing mandatory sections: ${missingSections.join(", ")}`,
+                    why: "These sections are critical for passing ATS filters and providing a complete professional picture for this role.",
+                    recommendation: `Add the following sections to your resume: ${missingSections.join(", ")}.`,
+                    improvement: "Ensures compliance with industry standards and increases ATS visibility."
+                });
             }
         }
 
@@ -495,24 +556,65 @@ class ResumeAnalyzer {
         let achievementDeficit = 0;
         let credDeficit = 0;
         let passiveCount = 0;
-        const bulletLevelIssues: string[] = [];
+        const bulletLevelTextIssues: string[] = [];
         const bulletFindings: string[] = [];
 
-        const experienceLines = this.sections["Experience"] || this.sections["Header"];
+        const usedVerbs = new Set<string>();
+        let redundancyDetected = false;
+
+        const experienceLines = this.sections["Experience"] || this.sections["Header"] || [];
         for (const line of experienceLines) {
             if (line.match(/^[•\-\*\.>\+]/) || (line.length > 25 && /^[A-Z]/.test(line))) {
-                const b = this.analyzeBullet(line.replace(/^[•\-\*\.>\+]\s*/, ""));
+                const cleanLine = line.replace(/^[•\-\*\.>\+]\s*/, "");
+                const b = this.analyzeBullet(cleanLine);
                 bulletCount++;
 
                 if (!b.isAchievement) achievementDeficit += 8;
                 if (b.credibility < 65) credDeficit += 8;
                 if (b.isPassive) passiveCount++;
 
-                if (b.issues.length > 0 && bulletLevelIssues.length < 3) {
-                    bulletLevelIssues.push(`${line.substring(0, 30)}... [${b.issues[0]}]`);
+                if (b.insight) {
+                    bullet_level_issues.push(b.insight);
+                }
+
+                // Verb redundancy check
+                const firstWord = cleanLine.toLowerCase().split(/\W+/)[0];
+                if (usedVerbs.has(firstWord) && !redundancyDetected) {
+                    redundancyDetected = true;
+                    critical_improvement_areas.push({
+                        detected: `Repetitive phrasing: Multiple bullets start with "${firstWord}"`,
+                        why: "Repeating the same action verbs makes the resume monotonous and fails to showcase the breadth of your skills.",
+                        recommendation: `Use a variety of synonyms for "${firstWord}" (e.g., spearheaded, directed, managed, orchestrated).`,
+                        improvement: "Creates a more dynamic and engaging narrative of your professional background."
+                    });
+                }
+                usedVerbs.add(firstWord);
+
+                if (b.issues.length > 0 && bulletLevelTextIssues.length < 3) {
+                    bulletLevelTextIssues.push(`${line.substring(0, 30)}... [${b.issues[0]}]`);
                     bulletFindings.push(`[ISSUE] Bullet "${line.substring(0, 30)}..." lacks a measurable outcome. [ACTION] Use a result-oriented verb like "Spearheaded" and add a metric (e.g., "resulting in 20% efficiency gain").`);
                 }
             }
+        }
+
+        // Add role-specific missing signals to missing_signals
+        if (roleResult.missingKeywords.length > 0) {
+            missing_signals.push({
+                detected: `Missing high-value keywords: ${roleResult.missingKeywords.slice(0, 3).join(", ")}`,
+                why: "These keywords are essential for passing ATS screenings for your target role.",
+                recommendation: `Incorporate technical terms like ${roleResult.missingKeywords.slice(0, 3).join(", ")} naturally into your experience bullets.`,
+                improvement: "Significantly improves your ATS ranking and demonstrates domain expertise."
+            });
+        }
+
+        // Add generic recommendations
+        if (impactScore < 70) {
+            recommendations.push({
+                detected: "Low impact signal density",
+                why: "Your resume focuses more on duties (what you did) rather than achievements (what you achieved).",
+                recommendation: "Convert task-based bullets into achievement-based ones using the X-Y-Z formula: Accomplished [X] as measured by [Y], by doing [Z].",
+                improvement: "Differentiates you from other candidates by showcasing your unique value proposition."
+            });
         }
 
         const avgAchievementDeficit = bulletCount > 0 ? (achievementDeficit / bulletCount) : 10;
@@ -534,6 +636,16 @@ class ResumeAnalyzer {
 
         // Detail Feedback Generation (Detailed Review)
         const combinedFindings = [...roleResult.findings, ...socialResult.findings, ...bulletFindings];
+
+        // Map the deep insights back to section_feedback for visibility in current UI
+        if (critical_improvement_areas.length > 0) {
+            sectionFeedback["Critical Improvements Required"] = critical_improvement_areas.map(i => `${i.detected}: ${i.recommendation}`);
+        }
+
+        if (bullet_level_issues.length > 0) {
+            sectionFeedback["Bullet-Level Intelligence"] = bullet_level_issues.slice(0, 5).map(i => `${i.detected} - ${i.recommendation}`);
+        }
+
         if (combinedFindings.length > 0) {
             sectionFeedback[`Strategic Review: ${this.targetRole || this.roleCategory} Domain`] = combinedFindings.slice(0, 6);
         }
@@ -582,8 +694,11 @@ class ResumeAnalyzer {
             languageScore: Math.round(100 - (passiveCount * 1.5) - (avgCredDeficit * 1.5)),
             roleAlignmentScore: roleResult.score,
             criticalGaps: roleResult.defects,
-            bullet_level_issues: bulletLevelIssues,
-            improvementPriorities: combinedFindings.map(f => f.slice(0, 40) + "...")
+            bullet_level_issues: bullet_level_issues,
+            improvementPriorities: combinedFindings.map(f => f.slice(0, 40) + "..."),
+            critical_improvement_areas,
+            missing_signals,
+            recommendations
         };
 
         return result;

@@ -1,5 +1,12 @@
 import { analyzeResumeLocally } from './localAnalysisEngine';
 
+export interface ImprovementInsight {
+  detected: string;
+  why: string;
+  recommendation: string;
+  improvement: string;
+}
+
 export interface AnalysisResult {
   overallScore: number;
   impact_score: number;
@@ -41,8 +48,11 @@ export interface AnalysisResult {
   languageScore: number;
   roleAlignmentScore: number;
   criticalGaps: string[];
-  bullet_level_issues: string[];
+  bullet_level_issues: ImprovementInsight[];
   improvementPriorities: string[];
+  critical_improvement_areas: ImprovementInsight[];
+  missing_signals: ImprovementInsight[];
+  recommendations: ImprovementInsight[];
 }
 
 export async function analyzeResume(content: string, targetRole?: string, linkedinUrl?: string): Promise<AnalysisResult> {
