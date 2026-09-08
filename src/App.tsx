@@ -863,7 +863,7 @@ export default function App() {
             GitHub
           </a>
           <a
-            href="https://bafareedahamedportfolio.netlify.app/"
+            href="https://bafareedahamedportfoilo.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-all glass-card rounded-xl border border-white/5 hover:border-white/10"
